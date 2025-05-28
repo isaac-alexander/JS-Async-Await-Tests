@@ -9,6 +9,28 @@ function invokeAfterDelay(callback) {
 
 // JavaScript function that converts a callback-based function to a Promise-based function.
 
+function convertToPromise(callbackFunc) {
+    return function (...args) {
+        return new Promise((resolve, reject) => {
+            callbackFunc(...args, function (error, result) {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    };
+}
+
+function add(a, b, callback) {
+    setTimeout(() => callback(null, a + b), 1000);
+}
+
+const addPromise = convertToPromise(add);
+addPromise(2, 3).then(console.log);
+
+
 // JavaScript function that makes an HTTP GET request to 'https://dummyjson.com/quotes' and returns a Promise that resolves with the response data.
 
 function getQuotes() {
@@ -43,3 +65,24 @@ getMultipleQuotes(urls).then(results => {
 
 
 // JavaScript function that fetches data from API 'https://dummyjson.com/quotes/987654321' and retries the request 3 times if it fails.
+
+function getWithRetry(url, tries = 3) {
+    return fetch(url)
+        .then(res => {
+            if (!res.ok) throw new Error('Failed');
+            return res.json();
+        })
+        .catch(error => {
+            if (tries > 1) {
+                console.log(`Retrying... (${tries - 1} tries left)`);
+                return getWithRetry(url, tries - 1); 
+            } else {
+                console.log('Failed after 3 tries.');
+                throw error;
+            }
+        });
+}
+
+getWithRetry('https://dummyjson.com/quotes/987654321')
+    .then(data => console.log(data))
+    .catch(error => console.log('Final Error:', error));
